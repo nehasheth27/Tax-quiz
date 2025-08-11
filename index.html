@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tax Quest: Global Edition — Quiz</title>
+<style>
+:root{
+  --bg:#0f1724; --card:#0b1220; --accent:#16a34a; --muted:#94a3b8; --glass: rgba(255,255,255,0.03);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:linear-gradient(180deg,#071027 0%, #071a2f 60%);
+  color:#e6eef8;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.container{
+  width:100%;
+  max-width:920px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  border-radius:12px;
+  box-shadow: 0 10px 30px rgba(2,6,23,0.7);
+  padding:20px;
+  border:1px solid rgba(255,255,255,0.04);
+}
+.header{
+  display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px;
+}
+.brand{
+  display:flex; gap:12px; align-items:center;
+}
+.logo{
+  width:56px; height:56px; background:linear-gradient(135deg,#0ea5a0,#06b6d4); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:700; color:#04202a; font-size:22px;
+  box-shadow: inset 0 -6px 20px rgba(255,255,255,0.06);
+}
+.h1{font-size:20px; margin:0}
+.meta{color:var(--muted); font-size:13px}
+.controls{display:flex; gap:10px; align-items:center}
+.btn{
+  background:var(--glass); padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.03); color:inherit; cursor:pointer;
+  font-weight:600;
+}
+.btn.primary{background:linear-gradient(90deg,#10b981,#059669); color:#02120f;}
+.stats{display:flex; gap:10px; align-items:center; color:var(--muted); font-size:14px}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015)); padding:18px; border-radius:10px; border:1px solid rgba(255,255,255,0.03);}
+.qbox{display:flex; gap:18px; align-items:flex-start}
+.qnum{font-size:18px; color:var(--muted); min-width:54px}
+.question{font-size:18px; margin:0 0 10px 0}
+.choices{display:grid; grid-template-columns:1fr; gap:10px}
+.choice{
+  background:rgba(255,255,255,0.02); border-radius:10px; padding:10px 12px; cursor:pointer; border:1px solid rgba(255,255,255,0.02);
+  transition:all .14s;
+}
+.choice:hover{ transform:translateY(-3px); box-shadow:0 6px 20px rgba(2,6,23,0.6)}
+.choice.correct{ background:linear-gradient(90deg,#16a34a20,#16a34a10); border-color:rgba(16,163,74,0.25)}
+.choice.wrong{ background:linear-gradient(90deg,#ef444420,#ef444410); border-color:rgba(239,68,68,0.2)}
+.explain{font-size:13px; color:var(--muted); margin-top:8px}
+.footer{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:14px}
+.small{font-size:13px;color:var(--muted)}
+.score{font-weight:700; font-size:16px}
+.level{background:rgba(255,255,255,0.02); padding:6px 8px; border-radius:8px; border:1px solid rgba(255,255,255,0.03)}
+.hidden{display:none}
+.center{display:flex; align-items:center; justify-content:center}
+.result-big{font-size:22px; font-weight:800; margin:0}
+.badge{display:inline-block; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.03); font-weight:700}
+.footer-note{color:var(--muted); font-size:13px; margin-top:8px}
+@media (max-width:640px){
+  .qbox{flex-direction:column}
+  .logo{width:48px;height:48px;font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="container card" id="app">
+  <div class="header">
+    <div class="brand">
+      <div class="logo">TQ</div>
+      <div>
+        <h1 class="h1">Tax Quest: Global Edition</h1>
+        <div class="meta">Fun + gamified quiz to master international tax — 30+ questions</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="stats small">Coins: <span id="coins">0</span></div>
+      <div class="stats small">Level: <span id="level">1</span></div>
+      <button class="btn" id="shareBtn">Share</button>
+      <button class="btn primary" id="startBtn">Start Round</button>
+    </div>
+  </div>
+
+  <div id="gameArea">
+    <div id="intro" class="card">
+      <h2>Ready for a round?</h2>
+      <p class="meta">Each round = 10 random questions. +10 coins per correct answer. +5 bonus if <10s.</p>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <select id="topicFilter" class="btn">
+          <option value="all">All topics (mix)</option>
+          <option value="oecd">OECD & Pillar 2</option>
+          <option value="transfer_pricing">Transfer Pricing</option>
+          <option value="uae">UAE Corporate Tax & VAT</option>
+          <option value="gcc">GCC VAT (KSA / UAE)</option>
+          <option value="north_africa">Morocco & Egypt</option>
+        </select>
+        <label class="btn small">Timed bonus<input id="timedToggle" type="checkbox" style="margin-left:8px"></label>
+      </div>
+    </div>
+
+    <div id="quiz" class="card hidden">
+      <div class="qbox">
+        <div class="qnum">Q <span id="qIndex">1</span>/10</div>
+        <div style="flex:1">
+          <p id="questionText" class="question"></p>
+          <div class="choices" id="choices"></div>
+          <div id="explain" class="explain hidden"></div>
+          <div class="footer">
+            <div class="small">Time: <span id="timer">0</span>s</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="score small">Round score: <span id="roundScore">0</span></div>
+              <button class="btn" id="nextBtn">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="result" class="card hidden center" style="flex-direction:column;gap:12px">
+      <h2 class="result-big">Round complete!</h2>
+      <div class="small">You earned <span id="earnedCoins">0</span> coins this round.</div>
+      <div class="small">Total coins: <span id="totalCoins">0</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" id="playAgain">Play Again</button>
+        <button class="btn" id="viewBank">View Question Bank</button>
+      </div>
+      <div class="footer-note">Tip: Use Topic filter to focus on areas you want to master.</div>
+    </div>
+
+    <div id="bank" class="card hidden">
+      <h3>Question Bank (all)</h3>
+      <div id="bankList" style="display:grid;gap:8px;margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" id="backToMenu">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center">
+    <div class="small">Made for: Neha — International Tax practice. Share it with colleagues!</div>
+    <div><a href="#" id="downloadBtn" class="btn">Download Files</a></div>
+  </div>
+</div>
+
+<script>
+/* Question bank - 35 items */
+const QUESTION_BANK = [
+  {
+    q: "🌴 You're chilling in Dubai Marina: what's the UAE standard corporate tax rate for taxable income above AED 375,000?",
+    choices:["5%","9%","15%","20%"],
+    a:1,
+    explain:"Correct — UAE introduced a 9% standard corporate tax rate for taxable profits above AED 375,000; free zone benefits may differ.",
+    topic:"uae"
+  },
+  {
+    q:"✈️ KSA VAT reality check: what's Saudi Arabia's standard VAT rate (since July 2020)?",
+    choices:["5%","10%","15%","20%"],
+    a:2,
+    explain:"Correct — Saudi Arabia increased VAT to 15% in July 2020.",
+    topic:"gcc"
+  },
+  {
+    q:"🌍 OECD question: which principle is central to transfer pricing?",
+    choices:["Arm's Length Principle","Residence Principle","Source Principle","Substance Over Form"],
+    a:0,
+    explain:"Arm's Length — transactions between related parties should be priced as if between independent enterprises.",
+    topic:"oecd"
+  },
+  {
+    q:"🏛 Pillar 2's headline act is:",
+    choices:["Global minimum tax of 15%","A new VAT regime","Removal of transfer pricing rules","Tax-free zones expansion"],
+    a:0,
+    explain:"Pillar 2 introduces a 15% global minimum tax to limit profit shifting.",
+    topic:"oecd"
+  },
+  {
+    q:"🧾 What's a primary purpose of a Double Taxation Agreement (DTA)?",
+    choices:["Prevent double tax on same income","Increase tax on multinationals","Set VAT rates","Replace domestic tax law"],
+    a:0,
+    explain:"DTAs allocate taxing rights and reduce double taxation between jurisdictions.",
+    topic:"oecd"
+  },
+  {
+    q:"💼 Transfer pricing: which method compares prices between related and unrelated parties?",
+    choices:["Transactional Net Margin Method (TNMM)","Comparable Uncontrolled Price (CUP)","Profit Split","Cost Plus"],
+    a:1,
+    explain:"CUP directly compares prices for identical or similar transactions between independent parties.",
+    topic:"transfer_pricing"
+  },
+  {
+    q:"🏦 UAE free zones often offer corporate tax incentives. For taxable income below AED 375,000, the UAE rate is typically:",
+    choices:["0% or reduced","9%","15%","25%"],
+    a:0,
+    explain:"Small profits below threshold and certain free zone rules can lead to lower or zero tax, subject to conditions.",
+    topic:"uae"
+  },
+  {
+    q:"📄 What is country-by-country reporting (CbCR) mainly used for?",
+    choices:["Provide tax authorities with MNE allocation of revenue, profit and tax","Declare VAT collections","Set corporate tax rates","Report employee wages"],
+    a:0,
+    explain:"CbCR gives tax authorities a high-level view of where a multinational reports revenue, profit and taxes.",
+    topic:"oecd"
+  },
+  {
+    q:"🔁 Which of these is a common transfer pricing adjustment tool?",
+    choices:["Arm's length interest rate","Thin capitalization rules","Operational transform","Comparable Uncontrolled Price (CUP) adjustments"],
+    a:3,
+    explain:"CUP adjustments are frequently used to align related-party pricing with market comparables.",
+    topic:"transfer_pricing"
+  },
+  {
+    q:"🏁 VAT basics: zero-rated supplies mean:",
+    choices:["No VAT and no right to reclaim input VAT","VAT charged at 0% but supplier can reclaim input VAT","VAT charged at standard rate","Supplier must register for corporate tax only"],
+    a:1,
+    explain:"Zero-rated supplies are taxed at 0% and usually allow recovery of input VAT.",
+    topic:"gcc"
+  },
+  {
+    q:"🇲🇦 Morocco: Which tax is typically applied to goods and services at the standard rate?",
+    choices:["VAT","Corporate Income Tax","Customs only","Excise only"],
+    a:0,
+    explain:"Morocco applies VAT to goods and services; rates and rules vary depending on the item.",
+    topic:"north_africa"
+  },
+  {
+    q:"🇪🇬 Egypt VAT: Is VAT applied in Egypt?",
+    choices:["Yes","No","Only to imports","Only for non-residents"],
+    a:0,
+    explain:"Yes — Egypt operates a VAT system with specific rates and exemptions.",
+    topic:"north_africa"
+  },
+  {
+    q:"🧭 Permanent Establishment (PE): a PE usually gives a country the right to tax:",
+    choices:["Business profits attributable to the PE","All profits worldwide of the company","Employee salaries only","VAT on sales"],
+    a:0,
+    explain:"A PE generally allows the source country to tax profits attributable to the local business presence.",
+    topic:"oecd"
+  },
+  {
+    q:"📚 Which document supports transfer pricing positions and helps with audits?",
+    choices:["Transfer Pricing Documentation (Master File & Local File)","VAT return","CbCR only","DTA text"],
+    a:0,
+    explain:"Master File and Local File (plus CbCR) are standard documentation components under OECD guidance.",
+    topic:"transfer_pricing"
+  },
+  {
+    q:"💡 What's a typical purpose of withholding tax (WHT)?",
+    choices:["Tax non-resident income at source","Reduce VAT","Replace corporate tax","Fund local municipalities"],
+    a:0,
+    explain:"WHT taxes certain payments to non-residents (e.g., dividends, interest, royalties) at source.",
+    topic:"oecd"
+  },
+  {
+    q:"🧾 UAE VAT: the standard VAT rate in the UAE is:",
+    choices:["5%","10%","15%","0%"],
+    a:0,
+    explain:"The UAE's standard VAT rate is 5%.",
+    topic:"uae"
+  },
+  {
+    q:"⚖️ What does 'arm's length' aim to prevent?",
+    choices:["Profit shifting via non-market prices","Tax treaties","VAT fraud","Payroll mistakes"],
+    a:0,
+    explain:"It seeks to prevent related parties from manipulating prices to shift profits to low-tax jurisdictions.",
+    topic:"transfer_pricing"
+  },
+  {
+    q:"🧾 Which tax concept allows credits to avoid double taxation of the same income?",
+    choices:["Foreign tax credit","Withholding tax","VAT refund","Stamp duty"],
+    a:0,
+    explain:"A foreign tax credit lets taxpayers offset taxes paid abroad against domestic tax liability.",
+    topic:"oecd"
+  },
+  {
+    q:"🏢 Which of these is commonly required for transfer pricing compliance during audits?",
+    choices:["Benchmarking studies","Passport copy","Medical records","Environmental approvals"],
+    a:0,
+    explain:"Benchmarking studies are used to support pricing strategies and comparability.",
+    topic:"transfer_pricing"
+  },
+  {
+    q:"📈 Pillar 2 safe harbour / undertaxed profits rule aims to ensure:",
+    choices:["MNEs pay at least a minimum effective tax rate","VAT is harmonised","All domestic taxes removed","Free trade zones expand"],
+    a:0,
+    explain:"The goal is to ensure a minimum tax is paid where profits are reported if local tax is too low.",
+    topic:"oecd"
+  },
+  {
+    q:"🔎 Permanent establishment tests commonly look at:",
+    choices:["Dependent agent activities and fixed places of business","Only legal registration","Number of social media posts","VAT returns"],
+    a:0,
+    explain:"PE tests focus on the nature of activities (e.g., dependent agent) and presence (fixed place).",
+    topic:"oecd"
+  },
+  {
+    q:"🧾 Corporate tax residency is often determined by:",
+    choices:["Place of effective management","Place of incorporation","Both","None of the above"],
+    a:2,
+    explain:"Different jurisdictions use incorporation or place of effective management; some consider both.",
+    topic:"oecd"
+  },
+  {
+    q:"🛠 Transfer Pricing method: Cost Plus method is best used for:",
+    choices:["Manufacturing or distribution of goods with a controlled sale","Financial transactions only","Setting VAT rates","Calculating withholding tax"],
+    a:0,
+    explain:"Cost Plus adds an appropriate margin to costs, useful for manufacturing/distribution intercompany transactions.",
+    topic:"transfer_pricing"
+  },
+  {
+    q:"🏝 Free zone businesses claiming incentive must usually:",
+    choices:["Meet substance and local compliance conditions","Pay no taxes anywhere automatically","Only hire locals","Avoid exports"],
+    a:0,
+    explain:"Free zone incentives commonly require real substance (operations, staff, offices) and compliance conditions.",
+    topic:"uae"
+  },
+  {
+    q:"📝 What is a common feature of modern DTAs?",
+    choices:["Exchange of information between tax authorities","Removal of corporate tax","Single global tax rate","VAT harmonisation"],
+    a:0,
+    explain:"DTAs often include provisions for exchange of information to prevent evasion.",
+    topic:"oecd"
+  },
+  {
+    q:"💸 Which payment typically faces withholding tax when paid cross-border?",
+    choices:["Royalties","Domestic salaries","Local utilities","Municipal fines"],
+    a:0,
+    explain:"Royalties to non-residents are a classic example of payments subject to WHT.",
+    topic:"oecd"
+  },
+  {
+    q:"🇲🇦 Morocco corporate tax: which of the following statements is true?",
+    choices:["Morocco levies corporate income tax with specific rates depending on profit","Morocco has no corporate tax","Only foreigners pay corporate tax","Morocco uses VAT as corporate tax"],
+    a:0,
+    explain:"Morocco levies corporate income tax; rates depend on profit levels and sectors.",
+    topic:"north_africa"
+  },
+  {
+    q:"🇪🇬 Egypt corporate tax: generally, corporate tax applies to:",
+    choices:["Resident companies on worldwide income and non-residents on Egyptian-source income","Only Egyptian nationals","Only oil companies","Only foreign companies"],
+    a:0,
+    explain:"Resident entities are often taxed on worldwide income while non-residents on local-source income, subject to local rules.",
+    topic:"north_africa"
+  },
+  {
+    q:"🧾 VAT registration thresholds typically mean:",
+    choices:["Businesses under a turnover threshold may not be required to register","Everyone must register regardless of size","Only foreign firms register","Only service providers register"],
+    a:0,
+    explain:"Most VAT systems include thresholds below which registration is optional or not required.",
+    topic:"oecd"
+  },
+  {
+    q:"🎯 For exam prep: best practice when answering tax MCQs is to:",
+    choices:["Eliminate obviously wrong choices and pick the best remaining","Pick the first choice always","Choose the longest answer","Guess randomly"],
+    a:0,
+    explain:"Eliminating unlikely choices and using knowledge increases your chance of the right answer.",
+    topic:"oecd"
+  },
+  {
+    q:"🧾 What does 'transfer pricing documentation' aim to show?",
+    choices:["That intercompany transactions are priced at arm's length","Company logos","Employee salaries","VAT payment history"],
+    a:0,
+    explain:"Documentation demonstrates the rationale and support behind related-party pricing.",
+    topic:"transfer_pricing"
+  },
+  {
+    q:"🛡️ Pillar 2 implementation can affect multinational groups' effective tax rate calculations by:",
+    choices:["Imposing top-up tax where effective tax rate is below minimum","Removing domestic filing obligations","Eliminating transfer pricing audits","Standardising VAT rates"],
+    a:0,
+    explain:"Top-up taxes can be applied to bring an MNE's effective tax rate up to the minimum.",
+    topic:"oecd"
+  }
+];
+
+/* App logic */
+let coins = parseInt(localStorage.getItem('tq_coins')||'0',10) || 0;
+let level = Math.floor(coins/50)+1;
+let round = [];
+let qIdx = 0;
+let roundScore = 0;
+let timerInterval=null;
+let startTime=null;
+let timedMode = false;
+
+const coinsEl = document.getElementById('coins');
+const levelEl = document.getElementById('level');
+const startBtn = document.getElementById('startBtn');
+const quizEl = document.getElementById('quiz');
+const introEl = document.getElementById('intro');
+const resultEl = document.getElementById('result');
+const bankEl = document.getElementById('bank');
+const qIndexEl = document.getElementById('qIndex');
+const questionText = document.getElementById('questionText');
+const choicesEl = document.getElementById('choices');
+const explainEl = document.getElementById('explain');
+const timerEl = document.getElementById('timer');
+const nextBtn = document.getElementById('nextBtn');
+const roundScoreEl = document.getElementById('roundScore');
+const earnedCoinsEl = document.getElementById('earnedCoins');
+const totalCoinsEl = document.getElementById('totalCoins');
+const playAgain = document.getElementById('playAgain');
+const viewBank = document.getElementById('viewBank');
+const bankList = document.getElementById('bankList');
+const topicFilter = document.getElementById('topicFilter');
+const timedToggle = document.getElementById('timedToggle');
+const shareBtn = document.getElementById('shareBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+
+coinsEl.textContent = coins;
+levelEl.textContent = level;
+totalCoinsEl.textContent = coins;
+
+function pickRound(topic='all'){
+  const pool = (topic==='all') ? QUESTION_BANK.slice() : QUESTION_BANK.filter(x=>x.topic===topic);
+  // shuffle
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  return pool.slice(0,10);
+}
+
+function startRound(){
+  timedMode = timedToggle.checked;
+  round = pickRound(topicFilter.value);
+  qIdx = 0;
+  roundScore = 0;
+  introEl.classList.add('hidden');
+  bankEl.classList.add('hidden');
+  resultEl.classList.add('hidden');
+  quizEl.classList.remove('hidden');
+  loadQuestion();
+}
+
+function loadQuestion(){
+  const item = round[qIdx];
+  qIndexEl.textContent = qIdx+1;
+  questionText.textContent = item.q;
+  explainEl.classList.add('hidden');
+  explainEl.textContent = '';
+  choicesEl.innerHTML = '';
+  item.choices.forEach((c,i)=>{
+    const d = document.createElement('div');
+    d.className='choice';
+    d.tabIndex=0;
+    d.innerHTML = `<strong>${String.fromCharCode(65+i)}.</strong> ${c}`;
+    d.onclick = ()=>selectChoice(i);
+    d.onkeyup = (e)=>{ if(e.key==='Enter') selectChoice(i); }
+    choicesEl.appendChild(d);
+  });
+  roundScoreEl.textContent = roundScore;
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  startTime = Date.now();
+  timerEl.textContent = '0';
+  if(timedMode){
+    timerInterval = setInterval(()=>{
+      const s = Math.floor((Date.now()-startTime)/1000);
+      timerEl.textContent = s;
+    },200);
+  } else {
+    timerEl.textContent = '0';
+  }
+}
+
+function selectChoice(choiceIndex){
+  // disable further clicks
+  Array.from(choicesEl.children).forEach(c=>c.onclick=null);
+  clearInterval(timerInterval);
+  const item = round[qIdx];
+  const correct = item.a === choiceIndex;
+  const chosenEl = choicesEl.children[choiceIndex];
+  if(correct){
+    chosenEl.classList.add('correct');
+    // calculate coins: base 10, bonus if timed <10s
+    let earned = 10;
+    const took = Math.floor((Date.now()-startTime)/1000);
+    if(timedMode && took<10){ earned +=5; }
+    roundScore += earned;
+    coins += earned;
+    localStorage.setItem('tq_coins', coins);
+    coinsEl.textContent = coins;
+    level = Math.floor(coins/50)+1;
+    levelEl.textContent = level;
+  } else {
+    chosenEl.classList.add('wrong');
+    // highlight correct
+    const correctEl = choicesEl.children[item.a];
+    if(correctEl) correctEl.classList.add('correct');
+  }
+  explainEl.textContent = item.explain;
+  explainEl.classList.remove('hidden');
+  nextBtn.disabled=false;
+}
+
+nextBtn.onclick = ()=>{
+  nextBtn.disabled = true;
+  qIdx++;
+  if(qIdx>=round.length){
+    endRound();
+  } else {
+    loadQuestion();
+  }
+};
+
+function endRound(){
+  quizEl.classList.add('hidden');
+  resultEl.classList.remove('hidden');
+  earnedCoinsEl.textContent = roundScore;
+  totalCoinsEl.textContent = coins;
+}
+
+playAgain.onclick = ()=>{
+  resultEl.classList.add('hidden');
+  introEl.classList.remove('hidden');
+};
+
+viewBank.onclick = ()=>{
+  resultEl.classList.add('hidden');
+  renderBank();
+  bankEl.classList.remove('hidden');
+};
+
+function renderBank(){
+  bankList.innerHTML='';
+  QUESTION_BANK.forEach((item,i)=>{
+    const div = document.createElement('div');
+    div.className='card';
+    div.style.display='flex';
+    div.style.justifyContent='space-between';
+    div.style.alignItems='center';
+    div.innerHTML = `<div style="max-width:80%"><strong>${i+1}.</strong> ${item.q}<div class="small" style="margin-top:6px;color:var(--muted)">${item.explain}</div></div><div class="badge">${item.topic}</div>`;
+    bankList.appendChild(div);
+  });
+}
+
+startBtn.onclick = startRound;
+nextBtn.disabled = true;
+timedToggle.onchange = ()=>{ /* noop */ }
+shareBtn.onclick = ()=>{
+  const url = location.href;
+  if(navigator.share){
+    navigator.share({title:'Tax Quest: Global Edition', text:'Play this international tax quiz!', url});
+  } else {
+    prompt('Share this link with colleagues:', url);
+  }
+};
+
+downloadBtn.onclick = (e)=>{
+  e.preventDefault();
+  // trigger file download link provided in page (will be set by host later)
+  const link = document.createElement('a');
+  link.href = 'tax_quiz_files.zip';
+  link.download = 'tax_quiz_files.zip';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
+
+/* Init: render bank hidden, set totals */
+renderBank();
+</script>
+</body>
+</html>
